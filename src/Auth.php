@@ -129,6 +129,10 @@ class Auth
                 throw new \Exception('已在其他地方登录');
             }
         }
+        if ($this->expire > 0) {
+            # 刷新过期时间
+            Redis::expire($decryptData['key'], $this->expire);
+        }
         return $decryptData['data'];
     }
     /**
@@ -141,8 +145,6 @@ class Auth
     {
         $time = time();
         $encryptData = [
-            'expire' => $time + $this->expire,
-            'single' => $this->single,
             'key' => 'OAUTH::' . md5($this->prefix . Str::random(32)) . '::' . sha1($time),
             'data' => $data,
         ];
