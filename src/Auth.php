@@ -2,6 +2,8 @@
 
 namespace loong\oauth;
 
+use loong\oauth\exception\TokenExpireException;
+use loong\oauth\exception\SingleException;
 use loong\oauth\utils\CreatePem;
 use loong\oauth\utils\Redis;
 use loong\oauth\utils\Rsa;
