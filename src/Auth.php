@@ -152,7 +152,7 @@ class Auth
             'expire' => $this->expire,
         ];
         $expire = $this->expire;
-        if ($this->expire < 0) {
+        if ($this->expire <= 0) {
             $expire = 60;
         }
         Redis::setex($encryptData['key'], $expire, $time);
