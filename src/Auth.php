@@ -50,29 +50,49 @@ class Auth
      */
     public function __construct(array $config = [])
     {
-        # 如若传入了私钥则代表使用自定义公私钥
-        if (empty($config['rsa_privatekey'])) {
-            $this->rsa_privatekey = config_path('certs') . 'rsa_private.pem';
-            # 判断私钥是否存在，不存在则生成
-            if (!file_exists($this->rsa_privatekey)) {
-                CreatePem::create(config_path('certs'));
-            }
-        } else {
-            $this->rsa_privatekey = $config['rsa_privatekey'];
+        $_config = [
+            'certs' => config_path('certs'),
+            'rsa_privatekey' => config_path('certs') . '/rsa_private.pem',
+            'rsa_publickey' => config_path('certs') . '/rsa_public.pem',
+            'prefix' => 'oauth',
+            'expire' => 7200,
+            'single' => false,
+        ];
+        $oauthFile = config_path() . '/oauth.php';
+        $fileConfig = [];
+        if (file_exists($oauth)) {
+            $fileConfig = include_once $oauthFile;
         }
-        $this->rsa_publickey = isset($config['rsa_publickey']) ? $config['rsa_publickey'] : config_path('certs') . 'rsa_public.pem';
-        $this->prefix = isset($config['prefix']) ? $config['prefix'] : 'oauth';
-        $this->expire = $config['expire'] ?? 7200;
-        $this->single = $config['single'] ?? false;
+        $config = array_merge($_config, $fileConfig, $config);
+        $this->rsa_privatekey = $config['rsa_privatekey'];
+        # 判断私钥是否存在，不存在则生成
+        if (!file_exists($this->rsa_privatekey)) {
+            CreatePem::create($config);
+        }
+        $this->rsa_publickey = $config['rsa_publickey'];
+        $this->prefix = $config['prefix'];
+        $this->expire = $config['expire'];
+        $this->single = $config['single'];
     }
     /**
      * 刷新密钥
      * 用于生成密钥对或把所有用户踢下线
      * @return void
      */
-    public static function refreshRsa()
+    public function refreshRsa()
     {
-        CreatePem::create(config_path('certs'));
+        $_config = [
+            'certs' => config_path('certs'),
+            'rsa_privatekey' => config_path('certs') . '/rsa_private.pem',
+            'rsa_publickey' => config_path('certs') . '/rsa_public.pem'
+        ];
+        $oauthFile = config_path() . '/oauth.php';
+        $fileConfig = [];
+        if (file_exists($oauthFile)) {
+            $fileConfig = include_once $oauthFile;
+        }
+        $config = array_merge($_config, $fileConfig, $config);
+        CreatePem::create($config);
     }
     /**
      * 设置前缀
