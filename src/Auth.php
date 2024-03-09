@@ -60,7 +60,7 @@ class Auth
         ];
         $oauthFile = config_path() . '/oauth.php';
         $fileConfig = [];
-        if (file_exists($oauth)) {
+        if (file_exists($oauthFile)) {
             $fileConfig = include_once $oauthFile;
         }
         $config = array_merge($_config, $fileConfig, $config);
