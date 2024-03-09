@@ -61,7 +61,7 @@ class Auth
         $oauthFile = config_path() . '/oauth.php';
         $fileConfig = [];
         if (file_exists($oauthFile)) {
-            $fileConfig = include_once $oauthFile;
+            $fileConfig = include $oauthFile;
         }
         $config = array_merge($_config, $fileConfig, $config);
         $this->rsa_privatekey = $config['rsa_privatekey'];
@@ -89,7 +89,7 @@ class Auth
         $oauthFile = config_path() . '/oauth.php';
         $fileConfig = [];
         if (file_exists($oauthFile)) {
-            $fileConfig = include_once $oauthFile;
+            $fileConfig = include $oauthFile;
         }
         $config = array_merge($_config, $fileConfig, $config);
         CreatePem::create($config);

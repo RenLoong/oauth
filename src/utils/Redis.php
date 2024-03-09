@@ -10,9 +10,9 @@ class Redis
         if (class_exists('\Redis')) {
             $oauthFile = config_path() . '/oauth.php';
             if (file_exists($oauthFile)) {
-                $config = include_once $oauthFile;
+                $config = include $oauthFile;
             } else {
-                $config = include_once config_path() . '/cache.php';
+                $config = include config_path() . '/cache.php';
                 if (!isset($config['stores']['redis'])) {
                     throw new \Exception('请配置config/cache.php redis');
                 }
