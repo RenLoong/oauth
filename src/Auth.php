@@ -2,6 +2,8 @@
 
 namespace loong\oauth;
 
+use Exception;
+use loong\oauth\exception\LockException;
 use loong\oauth\exception\TokenExpireException;
 use loong\oauth\exception\SingleException;
 use loong\oauth\utils\CreatePem;
@@ -19,6 +21,10 @@ use loong\oauth\utils\Str;
  * @method decrypt(string $token)
  * @method encrypt(mixed $data)
  * @method delete(string $token)
+ * @method lock(string $token, mixed $password)
+ * @method unlock(string $token, mixed $password)
+ * @method hasLock(string $token)
+ *
  * 
  * 静态调用需使用门面类
  * @method static void refreshRsa()
@@ -29,6 +35,9 @@ use loong\oauth\utils\Str;
  * @method static string encrypt(mixed $data)
  * @method static mixed decrypt(string $token)
  * @method static bool delete(string $token)
+ * @method static void lock(string $token, mixed $password)
+ * @method static void unlock(string $token, mixed $password)
+ * @method static bool hasLock(string $token)
  */
 class Auth
 {
@@ -147,6 +156,9 @@ class Auth
         if (!Redis::get($decryptData['key'])) {
             throw new TokenExpireException('token已过期');
         }
+        if ($this->hasLock($token)) {
+            throw new LockException('token已锁定');
+        }
         if ($this->single) {
             $singleKey = Redis::get('OAUTH::' . $this->prefix . '::' . $decryptData['data'][$this->singleKey]);
             if ($singleKey != $decryptData['key']) {
@@ -199,5 +211,51 @@ class Auth
             return true;
         }
         return Redis::del($decryptData['key']);
+    }
+    /**
+     * 锁定token
+     *
+     * @param string $token
+     * @param mixed $password 解锁密码
+     * @return void
+     */
+    public function lock(string $token, mixed $password)
+    {
+        $decryptData = Rsa::decrypt($token, $this->rsa_privatekey);
+        if (!Redis::get($decryptData['key'])) {
+            throw new TokenExpireException('token已过期');
+        }
+        $expire = Redis::ttl($decryptData['key']);
+        $lockKey = 'OAUTH::LOCK::' . $decryptData['key'];
+        Redis::setex($lockKey, $expire, $password);
+    }
+    /**
+     * 解锁token
+     *
+     * @param string $token
+     * @param mixed $password
+     * @return void
+     */
+    public function unlock(string $token, mixed $password)
+    {
+        $decryptData = Rsa::decrypt($token, $this->rsa_privatekey);
+        if (!Redis::get($decryptData['key'])) {
+            throw new TokenExpireException('token已过期');
+        }
+        $lockKey = 'OAUTH::LOCK::' . $decryptData['key'];
+        $lockPassword = Redis::get($lockKey);
+        if ($lockPassword != $password) {
+            throw new Exception('PIN码错误');
+        }
+        Redis::del($lockKey);
+    }
+    public function hasLock(string $token)
+    {
+        $decryptData = Rsa::decrypt($token, $this->rsa_privatekey);
+        if (!Redis::get($decryptData['key'])) {
+            throw new TokenExpireException('token已过期');
+        }
+        $lockKey = 'OAUTH::LOCK::' . $decryptData['key'];
+        return Redis::exists($lockKey);
     }
 }
