@@ -20,6 +20,7 @@ use loong\oauth\utils\Str;
  * @method setSingleKey(string $singleKey)
  * @method decrypt(string $token)
  * @method encrypt(mixed $data)
+ * @method refresh(string $token,int $expire)
  * @method delete(string $token)
  * @method lock(string $token, mixed $password)
  * @method unlock(string $token, mixed $password)
@@ -34,6 +35,7 @@ use loong\oauth\utils\Str;
  * @method static Auth setSingleKey(string $singleKey)
  * @method static string encrypt(mixed $data)
  * @method static mixed decrypt(string $token)
+ * @method static void refresh(string $token,int $expire)
  * @method static bool delete(string $token)
  * @method static void lock(string $token, mixed $password)
  * @method static void unlock(string $token, mixed $password)
@@ -197,6 +199,26 @@ class Auth
             Redis::persist($encryptData['key']);
         }
         return Rsa::encrypt($encryptData, $this->rsa_publickey);
+    }
+    /**
+     * 刷新token过期时间
+     * @param string $token
+     * @param int $expire 如若不传则默认为当前配置的过期时间
+     * @return void
+     */
+    public function refresh(string $token, int $expire = 0)
+    {
+        $decryptData = Rsa::decrypt($token, $this->rsa_privatekey);
+        if (!$expire) {
+            $expire = $this->expire;
+            if (isset($decryptData['expire']) && $decryptData['expire'] > 0) {
+                $expire = $decryptData['expire'];
+            }
+        }
+        if (Redis::get($decryptData['key'])) {
+            return Redis::expire($decryptData['key'], $expire);
+        }
+        return false;
     }
     /**
      * 删除指定token
